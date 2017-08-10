@@ -11,9 +11,9 @@ Thread threadLight = Thread();
 
 //SETTING STRIPS
 #define PIN 2
-#define NUM_LEDS 15
+#define NUM_LEDS 900
 #define PIN2 3
-#define NUM_LEDS2 15
+#define NUM_LEDS2 300
 
 //ACTIVE STRIPS
 boolean isActiveStrip1 = true;
@@ -31,8 +31,8 @@ int strip2Event=1;
 
 
 //STRIP RGBS
-int r1 = 255, g1 = 0, b1 = 0;
-int r2 = 0, g2 = 0, b2 = 255;
+int r1 = 255, g1 = 255, b1 = 0;
+int r2 = 255, g2 = 255, b2 = 255;
 
 
 //STRIP COUNTERS
