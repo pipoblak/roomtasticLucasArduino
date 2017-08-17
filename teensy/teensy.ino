@@ -28,8 +28,8 @@ CRGB strip2[NUM_LEDS2];
 
 
 //STRIP EVENT
-int strip1Event=1;
-int strip2Event=1;
+int strip1Event=0;
+int strip2Event=0;
 
 
 //STRIP RGBS
@@ -125,16 +125,48 @@ void serialReadCall() {
       int idStri = idStrip.toInt();
 
       if (idStri == 1) {
+        if(ID==3){
+          if(!strip1On){
+            ID=0;
+            strip1On=true;
+          }
+          else{
+            strip1On=false;
+            }
+        }
+        
         strip1Event = ID;
         strip1Count = 0;
         strip1CountJ = 0;
+        
       }
       else if (idStri == 2) {
+        if(ID==3){
+          if(!strip2On){
+            ID=0;
+            strip2On=true;
+            }
+          else{
+            strip2On=false;
+            }
+        }       
         strip2Event = ID;
         strip2Count = 0;
         strip2CountJ = 0;
       }
       else if (idStri == 0) {
+        if(ID==3){
+          if(!strip1On || !strip2On){
+            ID=0;
+            strip1On=true;
+            strip2On=true;
+          }
+          else{
+            strip1On=false;
+            strip2On=false;
+            }
+          
+        }
         strip1Event = ID;
         strip2Event = ID;
 
@@ -165,14 +197,19 @@ else if(strip1Event==0)
   setAll(r1, g1, b1, 1);
 else if(strip1Event==1)
   setAll(r1/2, g1/2, b1/2, 1);
+else if(strip1Event==3)
+  setAll(0, 0, 0, 1);
+
 
 //STRIP 2 EVENT
 if(strip2Event==2)
   simpleRainbow(0, 2);
 else if(strip2Event==0)
   setAll(r2, g2, b2, 2);
-else if(strip1Event==1)
-  setAll(r1/2, g1/2, b1/2, 2);
+else if(strip2Event==1)
+  setAll(r2/2, g2/2, b2/2, 2);
+else if(strip2Event==3)
+  setAll(0, 0, 0, 2);
 
 }
 
