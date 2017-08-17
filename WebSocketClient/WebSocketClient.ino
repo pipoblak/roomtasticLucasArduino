@@ -5,6 +5,10 @@
 
 #include <Hash.h>
 
+#include <SoftwareSerial.h>
+
+SoftwareSerial USE_SERIAL(D1, D2); // RX, TX
+
 WebSocketsClient webSocket;
 long msSend;
 long ms;
@@ -17,7 +21,6 @@ const char* password = "boladomesmo";
 #define RELAY D1
 #define COOLER D5
 
-#define USE_SERIAL Serial
 
 boolean power;
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t lenght) {
@@ -36,8 +39,8 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t lenght) {
             }
             break;
         case WStype_TEXT:
-            USE_SERIAL.printf("%s\n", payload);
-            
+            USE_SERIAL.println((char*) payload);
+            Serial.println((char*) payload);
             if(payload[0]=='$'){
               webSocket.sendTXT("{'Device':{'id':'0','name':'powerController','macAddress':'"+WiFi.macAddress()+"','owner':'"+ owner + "'}}");
             }
@@ -83,10 +86,9 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t lenght) {
 
 void setup() {
     // USE_SERIAL.begin(921600);
-    USE_SERIAL.begin(9600);
+    Serial.begin(115200);
+    USE_SERIAL.begin(115200);
 
-    //Serial.setDebugOutput(true);
-    USE_SERIAL.setDebugOutput(true);
 
     USE_SERIAL.println();
     USE_SERIAL.println();
@@ -94,8 +96,8 @@ void setup() {
 
 
     //INITIALIZING WIFI
-      Serial.println();
-      Serial.println();
+      USE_SERIAL.println();
+      USE_SERIAL.println();
       Serial.print("Connecting to ");
       Serial.println(ssid);
       WiFi.begin(ssid, password);
@@ -103,12 +105,12 @@ void setup() {
 
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
-      Serial.print(".");
+      USE_SERIAL.print(".");
     }
 
 
-    webSocket.begin("192.168.15.30", 82);
-    Serial.print(WiFi.macAddress());
+    webSocket.begin("192.168.15.21", 82);
+    USE_SERIAL.print(WiFi.macAddress());
     webSocket.onEvent(webSocketEvent);
     pinMode(RELAY,OUTPUT);
     pinMode(COOLER, OUTPUT);

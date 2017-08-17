@@ -11,7 +11,7 @@ Thread threadLight = Thread();
 
 //SETTING STRIPS
 #define PIN 2
-#define NUM_LEDS 900
+#define NUM_LEDS 300
 #define PIN2 3
 #define NUM_LEDS2 300
 
@@ -19,6 +19,8 @@ Thread threadLight = Thread();
 boolean isActiveStrip1 = true;
 boolean isActiveStrip2 = true;
 
+boolean strip1On = true;
+boolean strip2On = true;
 
 //CREATING STRIPS
 CRGB strip1[NUM_LEDS];
@@ -32,7 +34,7 @@ int strip2Event=1;
 
 //STRIP RGBS
 int r1 = 255, g1 = 255, b1 = 0;
-int r2 = 255, g2 = 255, b2 = 255;
+int r2 = 255, g2 = 255, b2 = 0;
 
 
 //STRIP COUNTERS
@@ -48,45 +50,40 @@ int Speed = 5;
 
 boolean blinkState=false;
 int commandCount=0; 
+boolean canRun=false;
+String recivedDataStr = "";
 void serialReadCall() {
+ 
   if (Serial2.available() > 0) {
-    String recivedDataStr = "";
-    char recivedChar;
     
-    noInterrupts();
-    while (Serial2.available() > 0 && commandCount < 1 ) {
+    char recivedChar;
+    while (Serial2.available() > 0) {
       recivedChar = Serial2.read();
-      if (recivedChar != '\n') {
-        // Concatena valores
-        if(commandCount <1 ){
-          recivedDataStr+=recivedChar;  
-        }
-        if(recivedChar=='|'){
-          commandCount++;
-          }
-        
-        
-        delay(15);
+      if(commandCount <1 ){
+        recivedDataStr+=recivedChar;  
       }
+      if(recivedChar=='|'){
+        commandCount++;
+      }
+          
     }
-    interrupts();
-
-    delay(10);
-
-    Serial.println(recivedDataStr);
-//    if (recivedDataStr.indexOf("$") >= 0) {
-//       Serial.println("MAGAL Device");
-//    }
-    //LEITURA RGB #R255G255B255S0
-     if (recivedDataStr.indexOf("#") >= 0) {
+    if((recivedDataStr.indexOf("B")<0 || recivedDataStr.indexOf("S") <0 || recivedDataStr.indexOf("|")<0) && recivedDataStr.indexOf(";")<0){
+      canRun=false;   
+    } 
+    if(recivedDataStr.lastIndexOf("|")>1){
+      canRun=true;
+    }
+    
+     if (recivedDataStr.lastIndexOf("#") >= 0 && canRun) {
+      Serial.println(recivedDataStr);
       String r="",g="",b="";
-      r=recivedDataStr.substring(recivedDataStr.indexOf("R")+1,recivedDataStr.indexOf("G"));
-      g=recivedDataStr.substring(recivedDataStr.indexOf("G")+1,recivedDataStr.indexOf("B"));
-      b=recivedDataStr.substring(recivedDataStr.indexOf("B")+1,recivedDataStr.indexOf("S"));
+      r=recivedDataStr.substring(recivedDataStr.lastIndexOf("R")+1,recivedDataStr.lastIndexOf("G"));
+      g=recivedDataStr.substring(recivedDataStr.lastIndexOf("G")+1,recivedDataStr.lastIndexOf("B"));
+      b=recivedDataStr.substring(recivedDataStr.lastIndexOf("B")+1,recivedDataStr.lastIndexOf("S"));
       String s="";
-      s=recivedDataStr.substring(recivedDataStr.indexOf("S")+1,recivedDataStr.indexOf("|"));
+      s=recivedDataStr.substring(recivedDataStr.lastIndexOf("S")+1,recivedDataStr.lastIndexOf("|"));
       if(s.length()<1 ){
-        s=5;
+        s="5";
       }
       int idStri = s.toInt();
       Serial.println("RED 1: " + r + " Green1: " + g + " Blue1: " + b + " Strip: " + s );
@@ -112,41 +109,20 @@ void serialReadCall() {
         b2 = b.toInt();
 
       }
+      recivedDataStr="";
 
 
     }//FIM DA LEITURA RGB
 
     //LEITURA DE EVENTO
-    if (recivedDataStr.indexOf("@") >= 0) {
-      int indexId = recivedDataStr.indexOf("@");
-      int indexD = recivedDataStr.indexOf("D");
-      int indexS = recivedDataStr.indexOf("S");
-      int indexSize = recivedDataStr.length();
-      int str_len = recivedDataStr.length() + 1;
-      char char_array[str_len];
-      recivedDataStr.toCharArray(char_array, str_len);
-      String Speed = "";
+    if (recivedDataStr.lastIndexOf(";") >= 0 && canRun) {
+      Serial.println(recivedDataStr);
       String idEvent = "";
       String idStrip = "";
-
-      for (int cont = indexId + 1; cont < indexD; cont++) {
-        idEvent.concat(char_array[cont]);
-
-      }
-
-      for (int cont = indexD + 1; cont < indexS; cont++) {
-        Speed.concat(char_array[cont]);
-
-      }
-
-      for (int cont = indexS + 1; cont < indexSize; cont++) {
-        idStrip.concat(char_array[cont]);
-
-      }
+      idEvent=recivedDataStr.substring(recivedDataStr.lastIndexOf(";")+1,recivedDataStr.lastIndexOf("S"));
+      idStrip=recivedDataStr.substring(recivedDataStr.lastIndexOf("S")+1,recivedDataStr.lastIndexOf("|"));
       int ID = idEvent.toInt();
-
       int idStri = idStrip.toInt();
-
 
       if (idStri == 1) {
         strip1Event = ID;
@@ -171,39 +147,41 @@ void serialReadCall() {
         strip2CountJ = 0;
 
       }
+      recivedDataStr="";
     }
     //FIM EVENTO READ
 
   }
-    commandCount=0;
+
+  commandCount=0;
 
 }
 
 void lightCall() {
 
-if(strip1Event==0)
+if(strip1Event==2)
   simpleRainbow(0, 1);
-else if(strip1Event==1)
+else if(strip1Event==0)
   setAll(r1, g1, b1, 1);
-else if(strip1Event==2)
-  blinkLed();
+else if(strip1Event==1)
+  setAll(r1/2, g1/2, b1/2, 1);
 
-
-  //STRIP 2 EVENT
-if(strip2Event==0)
+//STRIP 2 EVENT
+if(strip2Event==2)
   simpleRainbow(0, 2);
-else if(strip2Event==1)
+else if(strip2Event==0)
   setAll(r2, g2, b2, 2);
+else if(strip1Event==1)
+  setAll(r1/2, g1/2, b1/2, 2);
 
 }
 
 //SETUP INFORMATIONS
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(9600);
+  Serial2.begin(115200);
   Serial.println("Teensy ON");
   Serial.println();
-
   //INITIALIZE ALL STRIPS
   FastLED.addLeds<WS2812B, PIN, GRB>(strip1, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.addLeds<WS2812B, PIN2, GRB>(strip2, NUM_LEDS2).setCorrection( TypicalLEDStrip );
@@ -213,7 +191,7 @@ void setup() {
   threadRead.setInterval(1);
 
   threadLight.onRun(lightCall);
-  threadLight.setInterval(1);
+  threadLight.setInterval(200);
 
   controll.add(&threadRead);
   controll.add(&threadLight);
@@ -222,18 +200,15 @@ void setup() {
 
 void loop() {
   controll.run();
-  yield();
 }
 
 //SHOW SPECIFC STRIP
 void showStrip() {
   FastLED.show();
-  yield();
 }
 
 //SET A SPECIFC PIXEL INTO A SPECIFC STRIP
 void setPixel(int Pixel, byte red, byte green, byte blue, int stripID) {
-  yield();
   if (stripID == 1) {
     strip1[Pixel].r = red;
     strip1[Pixel].g = green;
@@ -248,7 +223,6 @@ void setPixel(int Pixel, byte red, byte green, byte blue, int stripID) {
 
 //SET ALL PIXELS TO A SPECIFC STRIP
 void setAll(byte red, byte green, byte blue, int stripID) {
-  yield();
   int numberLeds;
   if (stripID == 1) {
     numberLeds = NUM_LEDS;
@@ -257,7 +231,6 @@ void setAll(byte red, byte green, byte blue, int stripID) {
     numberLeds = NUM_LEDS2;
   }
   for (int i = 0; i < numberLeds; i++ ) {
-    yield();
     setPixel(i, red, green, blue, stripID);
   }
   showStrip();
@@ -268,7 +241,6 @@ void setAll(byte red, byte green, byte blue, int stripID) {
 //WHEEL FOR RAINBOW
 byte * Wheel(byte WheelPos) {
   static byte c[3];
-  yield();
   if (WheelPos < 85) {
     c[0] = WheelPos * 3;
     c[1] = 255 - WheelPos * 3;
@@ -311,7 +283,6 @@ void simpleRainbow(int SpeedDelay, int stripID) {
     for (int i = 0; i < numberLeds; i++) {
       c = Wheel(((i * 256 / numberLeds) + cont) & 255);
       setPixel(i, *c, *(c + 1), *(c + 2), stripID);
-      yield();
     }
 
     contTempo = 0;
